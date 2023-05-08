@@ -1,10 +1,7 @@
-import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import pyssam
 from copy import copy
-import open3d as o3d
 import numpy as np
-import open3d as o3d
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 

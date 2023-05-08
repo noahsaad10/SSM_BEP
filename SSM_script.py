@@ -13,7 +13,7 @@ import glob
 
 '''
 # Import all VTK meshes
-files_vtk = glob.glob('./Right_Hip/groomed/*.vtk')
+files_vtk = glob.glob('./Geometries/Right_Hip/groomed/*.vtk')
 
 # Convert all files to STL
 for i in range(len(files_vtk)):
@@ -21,11 +21,11 @@ for i in range(len(files_vtk)):
 '''
 
 # Import all STL files
-files = glob.glob('./Pelvis/*.stl')
+files = glob.glob('./Geometries/Sacrum/*.stl')
 files = files  # Eventually if you wish to only select a few files
 
-ref_file = './Pelvis/TrajectoryVolume_10_Superior Ramus Right.stl'
-num_landmarks = 100
+ref_file = './Geometries/Sacrum/Sacrum_8.stl'
+num_landmarks = 300
 
 ref_landmarks = reference_landmark(ref_file, num_landmarks=num_landmarks)
 
@@ -38,7 +38,7 @@ for i in range(len(files)):
     landmarks_list[i] = landmarks
     print('File', i+1, 'out of', len(files), 'completed')
 
-
+mean_object = np.mean(landmarks_list, axis=0)
 '''
 # For random points
 
@@ -74,6 +74,24 @@ ssm.create_pca_model(ssm.landmarks_columns_scale, desired_variance=0.95)
 mean_shape_columnvector = ssm.compute_dataset_mean()
 mean_shape = mean_shape_columnvector.reshape(-1, 3)
 shape_model_components = ssm.pca_model_components
+
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot the 3D points
+ax.scatter(mean_object[:, 0], mean_object[:, 1], mean_object[:, 2])
+
+# Set axis labels and limits
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+
+# Show the plot
+plt.show()
+
+
+
 
 print(f"To obtain {ssm.desired_variance*100}% variance, {ssm.required_mode_number} modes are required")
 plot_cumulative_variance(np.cumsum(ssm.pca_object.explained_variance_ratio_), 0.95)
