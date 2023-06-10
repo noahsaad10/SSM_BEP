@@ -3,68 +3,29 @@ import numpy as np
 from landmark_script import *
 from plot_cumulative_variance import *
 from plot_shape_modes import *
-from vtk_2_stl import *
 from stl import mesh
 import glob
 
 # This script performs SSM
-#
+# Loads the landmarks that are previously generated.
 # Author: Noah Saad - n.w.saad@student.tudelft.nl
 
-'''
-# Import all VTK meshes
-files_vtk = glob.glob('./Geometries/Right_Hip/groomed/*.vtk')
 
-# Convert all files to STL
-for i in range(len(files_vtk)):
-    vtk_2_stl(files_vtk[i])
-'''
+# Load the generated landmarks to save time
+txt_landmark_files = glob.glob('./COW/links/landmarks/*.txt')
+#txt_landmark_files = txt_landmark_files[0:2]
+print(f'There are {len(txt_landmark_files)} files used in the SSM')
+num_landmarks = len(np.loadtxt(txt_landmark_files[0]))
 
-# Import all STL files
-files = glob.glob('./Geometries/Sacrum/*.stl')
-files = files  # Eventually if you wish to only select a few files
-
-ref_file = './Geometries/Sacrum/Sacrum_8.stl'
-num_landmarks = 300
-
-ref_landmarks = reference_landmark(ref_file, num_landmarks=num_landmarks)
-
+# Build the matrix with all the objects concatenated.
 shape_matrix = (num_landmarks, 3)
-landmarks_list = np.zeros(((len(files),) + shape_matrix))
-
-for i in range(len(files)):
-    landmarks = generate_landmarks(files[i], num_landmarks, reference_landmark= ref_landmarks)
+landmarks_list = np.zeros(((len(txt_landmark_files),) + shape_matrix))
+for i in range(len(txt_landmark_files)):
+    landmarks = np.loadtxt(txt_landmark_files[i])
     landmarks = landmarks.tolist()
     landmarks_list[i] = landmarks
-    print('File', i+1, 'out of', len(files), 'completed')
 
 mean_object = np.mean(landmarks_list, axis=0)
-'''
-# For random points
-
-num_samples = 10
-num_landmarks = 10000
-# Create random landmarks for SSM
-landmarks = np.random.normal(size=(num_samples, num_landmarks, 3))
-
-
-
-stl_nodes_num = landmarks_list[0]
-vertex_nodes = stl_nodes_num.vectors.reshape(-1, 3)
-shape_matrix = (len(vertex_nodes), 3)  # should be constant
-
-# Create the array of matrices for SSM
-matrix_data = np.zeros(((len(landmarks_list),) + shape_matrix))
-
-# Go through all files and complete matrix array
-for i in range(len(landmarks_list)):
-    stl_analyzed = landmarks_list[i]
-    stl_data = mesh.Mesh.from_file(stl_analyzed)
-    _, com, _ = stl_data.get_mass_properties()
-    stl_data.translate(-com)
-    vertex_coords = stl_data.vectors.reshape(-1, 3)
-    matrix_data[i] = vertex_coords
-'''
 
 # Run SSM
 ssm = pyssam.SSM(landmarks_list)
@@ -80,7 +41,7 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 # Plot the 3D points
-ax.scatter(mean_object[:, 0], mean_object[:, 1], mean_object[:, 2])
+ax.scatter(mean_object[:, 0], mean_object[:, 1], mean_object[:, 2], s=2)
 
 # Set axis labels and limits
 ax.set_xlabel('X')
@@ -91,17 +52,17 @@ ax.set_zlabel('Z')
 plt.show()
 
 
-
-
 print(f"To obtain {ssm.desired_variance*100}% variance, {ssm.required_mode_number} modes are required")
 plot_cumulative_variance(np.cumsum(ssm.pca_object.explained_variance_ratio_), 0.95)
 
 # Visualize the three main components
 
+saving_path = r'C:\Users\noah-\Desktop\TU\Year 3\BEP\\'
+
 mode_to_plot = 0
 print(f"Explained variance of mode {mode_to_plot} is", round(ssm.pca_object.explained_variance_ratio_[mode_to_plot]*100), "%")
 print('---------------------------------------------------------------------')
-plot_shape_modes(ssm, mean_shape_columnvector, mean_shape, ssm.model_parameters, ssm.pca_model_components, mode_to_plot)
+plot_shape_modes(ssm, mean_shape_columnvector, mean_shape, ssm.model_parameters, ssm.pca_model_components, mode_to_plot, saving_path)
 
 
 

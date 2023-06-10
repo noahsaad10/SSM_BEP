@@ -1,8 +1,13 @@
+import matplotlib.pyplot as plt
 import numpy as np
+import trimesh.registration
 from sklearn.cluster import KMeans
+from sklearn.cluster import SpectralClustering
 import open3d as o3d
 from stl import mesh
 from scipy.spatial import distance
+from scipy.optimize import linear_sum_assignment
+from trimesh import registration
 
 # The first function generates a reference landmark to later be used for aligning all objects. It uses K-mean clustering
 # and generates a landmark for centroid of each cluster.
@@ -11,25 +16,24 @@ from scipy.spatial import distance
 # The second function generates landmarks in exactly the same way as the first, and performs Procrustes to align the
 # reference with the landmarks. It computes the closest reference points and find the cross covariance matrix between
 # the reference and the closest_ref_points to find a transformation that aligns them.
-# Uses SVD to find the rotation matrices. Furthermore, it ensures that landmarks are one-to-one correspondent.
+# Uses SVD to find the rotation matrices. Furthermore, it ensures that landmarks are one-to-one correspondent by using
+# the Hungarian Algorithm.
 # Finally, returns the landmarks.
 # Input: STL file to be analyzed, num_landmarks (should be same as reference), and reference landmarks
-#
-# Note: Bottom lines can be used for visualization purposes.
 #
 # Author: Noah Saad - n.w.saad@student.tudelft.nl
 
 
-def reference_landmark(mesh_file, num_landmarks):
+def reference_landmark(mesh_name, num_landmarks):
 
-    mesh_file = mesh.Mesh.from_file(mesh_file)
+    mesh_file = mesh.Mesh.from_file(mesh_name)
     _, com, _ = mesh_file.get_mass_properties()
     mesh_file.translate(-com)
     # Convert the mesh to a numpy array
     points = np.asarray(mesh_file.vectors.reshape(-1,3))
 
     # Use KMeans to automatically determine landmark positions
-    kmeans = KMeans(n_clusters=num_landmarks, random_state=0).fit(points)
+    kmeans = KMeans(n_clusters=num_landmarks, random_state=0, n_init=8).fit(points)
 
     # Get the centroid of each cluster as the landmark position
     landmarks = kmeans.cluster_centers_
@@ -38,16 +42,16 @@ def reference_landmark(mesh_file, num_landmarks):
     return landmarks
 
 
-def generate_landmarks(mesh_file, num_landmarks, reference_landmark):
+def generate_landmarks(mesh_name, num_landmarks, reference_landmark):
 
     # Load the STL file using Open3D
-    mesh_file = mesh.Mesh.from_file(mesh_file)
+    mesh_file = mesh.Mesh.from_file(mesh_name)
     _, com, _ = mesh_file.get_mass_properties()
     mesh_file.translate(-com)
     # Convert the mesh to a numpy array
     points = np.asarray(mesh_file.vectors.reshape(-1, 3))
     # Use KMeans to automatically determine landmark positions
-    kmeans = KMeans(n_clusters=num_landmarks, random_state=0).fit(points)
+    kmeans = KMeans(n_clusters=num_landmarks, random_state=0, n_init=8).fit(points)
     # Get the centroid of each cluster as the landmark position
     landmarks = kmeans.cluster_centers_
 
@@ -71,34 +75,42 @@ def generate_landmarks(mesh_file, num_landmarks, reference_landmark):
     # apply rotation, translation, and scaling to landmarks
     transformed_points = (landmarks @ R) + closest_ref_points.mean(axis=0)
 
-    landmarks_correspondent = []
-    # Create correspondence, can be improved
-    for i in range(len(reference_landmark)):
-        distances_correspondent = np.linalg.norm(transformed_points - reference_landmark[i], axis=1)
-        correspondent_point = transformed_points[np.argmin(distances_correspondent)]
-        landmarks_correspondent.append(correspondent_point)
-    landmarks_correspondent = np.array(landmarks_correspondent)
+    # Create correspondence, ensuring one-to-one mapping
+    dist_matrix_correspondence = distance.cdist(reference_landmark, transformed_points)
+    row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence)
+    landmarks_correspondent = transformed_points[col_indices_correspondence]
 
     return landmarks_correspondent
 
 
-ref_landmarks = reference_landmark('./Geometries/Sacrum/Sacrum_8.stl', 300)
+def generate_landmarks_trimesh(mesh_name, num_landmarks, reference_landmark):
 
-final_landmarks = generate_landmarks('./Geometries/Sacrum/Sacrum_13.stl', 300, ref_landmarks)
+    # Load the STL file using Open3D
+    mesh_file = mesh.Mesh.from_file(mesh_name)
+    _, com, _ = mesh_file.get_mass_properties()
+    mesh_file.translate(-com)
+    # Convert the mesh to a numpy array
+    points = np.asarray(mesh_file.vectors.reshape(-1, 3))
+    # Use KMeans to automatically determine landmark positions
+    kmeans = KMeans(n_clusters=num_landmarks, random_state=0, n_init=8).fit(points)
+    # Get the centroid of each cluster as the landmark position
+    landmarks = kmeans.cluster_centers_
+
+    # Create correspondence, ensuring one-to-one mapping
+    dist_matrix_correspondence = distance.cdist(reference_landmark, landmarks)
+    row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence)
+    landmarks_correspondent = landmarks[col_indices_correspondence]
+
+    _, landmarks_transformed, _ = trimesh.registration.procrustes(landmarks_correspondent, reference_landmark, scale=False)
+
+    #dist_matrix_correspondence_2 = distance.cdist(reference_landmark, landmarks_transformed)
+    #row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence_2)
+    #final_landmarks = landmarks_transformed[col_indices_correspondence]
+
+    return landmarks_transformed
 
 
-colors = np.zeros((len(ref_landmarks) + len(final_landmarks), 3))
-colors[:len(ref_landmarks), :] = [1.0, 0.0, 0.0]  # set the color of the reference landmarks to red
-colors[len(ref_landmarks):, :] = [0.0, 0.0, 0.0]  # set the color of the transformed landmarks to black
 
-pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(np.concatenate((ref_landmarks, final_landmarks), axis=0))
-pcd.colors = o3d.utility.Vector3dVector(colors)
 
-mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=15, origin=[0, 0, 0])
 
-# Print the number of points in the point cloud
-print(f"Number of points in point cloud: {len(pcd.points)/2}")
 
-# Visualize the point cloud
-o3d.visualization.draw_geometries([pcd, mesh_frame])

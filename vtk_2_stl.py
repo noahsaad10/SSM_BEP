@@ -5,6 +5,10 @@ from vtk.util.numpy_support import vtk_to_numpy
 from vtk.util.numpy_support import numpy_to_vtk
 
 
+# Function converts vtk files to stl
+# Author - Noah Saad (n.w.saad@student.tudelft.nl)
+
+
 def vtk_2_stl(file_input):
     # Load the VTK mesh from file
     filename = file_input
@@ -40,4 +44,8 @@ def vtk_2_stl(file_input):
     writer.Update()
 
 
+files = glob.glob('./COW/links/groomed/*.vtk')
+
+for i in range(len(files)):
+    vtk_2_stl(files[i])
 

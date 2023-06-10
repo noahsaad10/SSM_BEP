@@ -4,14 +4,11 @@ from copy import copy
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from scipy.spatial import Delaunay
 
 
-def plot_shape_modes(ssm,
-  mean_shape_columnvector,
-  mean_shape,
-  original_shape_parameter_vector,
-  shape_model_components, mode_to_plot
-):
+def plot_shape_modes(ssm, mean_shape_columnvector,mean_shape, original_shape_parameter_vector,shape_model_components, mode_to_plot, saving_path):
+
   weights = [-1, 0, 1]
   fig= plt.figure()
   for j, weights_i in enumerate(weights):
@@ -43,6 +40,7 @@ def plot_shape_modes(ssm,
     )
 
     if weights_i == 0:
+      np.savetxt(f"{saving_path}mean_shape_coords.txt", mode_i_coords)
       ax = fig.add_subplot(1, 3, 2, projection='3d')
       ax.scatter(
         mode_i_coords[:, 0],
@@ -52,9 +50,11 @@ def plot_shape_modes(ssm,
         s=1,
       )
       ax.set_title("mean shape")
-      ax.axis()
+      ax.axis('auto')
 
     elif weights_i == weights[0]:
+      np.savetxt(f"{saving_path}mode_{weights[2]}_coords.txt", mode_i_coords)
+      ax = fig.add_subplot(1, 3, 2, projection='3d')
       ax = fig.add_subplot(1, 3, 1, projection='3d')
       ax.scatter(
         mode_i_coords[:, 0],
@@ -66,10 +66,11 @@ def plot_shape_modes(ssm,
         vmax=1,
         s=1,
       )
-      ax.set_title(f"mode {mode_to_plot} \nweight {weights_i}")
-      ax.axis()
+      ax.set_title(f"mode {mode_to_plot+1} \nweight {weights_i}")
+      ax.axis('auto')
 
     elif weights_i == weights[2]:
+      np.savetxt(f"{saving_path}mode_{weights[2]}_coords.txt", mode_i_coords)
       ax = fig.add_subplot(1, 3, 3, projection='3d')
 
       ax.scatter(
@@ -82,8 +83,8 @@ def plot_shape_modes(ssm,
         vmax=1,
         s=1,)
 
-      ax.set_title(f"mode {mode_to_plot} \nweight {weights_i}")
-      ax.axis()
+      ax.set_title(f"mode {mode_to_plot+1} \nweight {weights_i}")
+      ax.axis('auto')
 
   plt.show()
 
