@@ -11,6 +11,7 @@ Nomenclature:
 1) SSM_script.py: 
 
 This is the main script. It concatenates all the landmarks of the objects, such that it is fed into the pyssam module that performs SSM. The script will first give some information such as the number of objects used in the SSM. Second, it displays the average geometry. Third, it plots the cumulative variance of each mode. Finally, it displays a figure with the average geometry and a mode (user specified) with weights that can be chosen in script "Plot_shape_modes.py".
+This script uses Pyssam. 
 Input: Folder of landmarks of desired objects
 Output: Mean geometry txt file, plots of mean shape, modes, and cumulative variance. 
 
