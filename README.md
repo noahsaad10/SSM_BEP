@@ -64,5 +64,15 @@ Plots the cumulative variance of the each SSM mode.
 Input: ssm.pca_object.explained_variance_ratio_ and desired variance
 Output: Plot with cumulative variance of each mode.  
 
+9) SSM_script_improved.py:
+
+Uses a own code for SSM and does not make use of PYSSAM. Makes use of the class SSM defined in script "class_SSM.py".
+
+10) alignment_shapes.py:
+
+Code to align shapes after entropy generated landmarks. 
+
+
+
 
 
