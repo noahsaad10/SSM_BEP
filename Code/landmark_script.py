@@ -55,16 +55,13 @@ def generate_landmarks(mesh_name, num_landmarks, reference_landmark):
     # Get the centroid of each cluster as the landmark position
     landmarks = kmeans.cluster_centers_
 
-    closest_ref_points = []
-    for landmark in landmarks:
-        distances = distance.cdist(reference_landmark, [landmark])
-        closest_ref_point = reference_landmark[np.argmin(distances)]
-        closest_ref_points.append(closest_ref_point)
-    closest_ref_points = np.array(closest_ref_points)
-
+    # Create correspondence, ensuring one-to-one mapping
+    dist_matrix_correspondence = distance.cdist(reference_landmark, landmarks)
+    row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence)
+    landmarks_correspondent = landmarks[col_indices_correspondence]
     # Perform Procrustes analysis
-    mtx1 = closest_ref_points
-    mtx2 = landmarks
+    mtx1 = reference_landmark
+    mtx2 = landmarks_correspondent
     # translate to origin
     mtx1 -= mtx1.mean(axis=0)
     mtx2 -= mtx2.mean(axis=0)
@@ -73,14 +70,9 @@ def generate_landmarks(mesh_name, num_landmarks, reference_landmark):
     R = Vt.T @ U.T
 
     # apply rotation, translation, and scaling to landmarks
-    transformed_points = (landmarks @ R) + closest_ref_points.mean(axis=0)
+    transformed_points = (landmarks_correspondent @ R) + reference_landmark.mean(axis=0)
 
-    # Create correspondence, ensuring one-to-one mapping
-    dist_matrix_correspondence = distance.cdist(reference_landmark, transformed_points)
-    row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence)
-    landmarks_correspondent = transformed_points[col_indices_correspondence]
-
-    return landmarks_correspondent
+    return transformed_points
 
 
 def generate_landmarks_trimesh(mesh_name, num_landmarks, reference_landmark):
@@ -102,10 +94,6 @@ def generate_landmarks_trimesh(mesh_name, num_landmarks, reference_landmark):
     landmarks_correspondent = landmarks[col_indices_correspondence]
 
     _, landmarks_transformed, _ = trimesh.registration.procrustes(landmarks_correspondent, reference_landmark, scale=False)
-
-    #dist_matrix_correspondence_2 = distance.cdist(reference_landmark, landmarks_transformed)
-    #row_indices_correspondence, col_indices_correspondence = linear_sum_assignment(dist_matrix_correspondence_2)
-    #final_landmarks = landmarks_transformed[col_indices_correspondence]
 
     return landmarks_transformed
 
