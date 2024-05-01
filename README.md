@@ -1,5 +1,4 @@
 # SSM_BEP
-Repository for BEP 
 The scripts are used to compute a Statistical Shape Model (SSM) of any geometry. The code uses the following Python modules: NumPy, Pyssam, Matplotlib, Trimesh, Sklearn, Scipy, Numpy-stl, vtk. Below is a small explanation of all the scripts needed to compute SSM. 
 
 Author: Noah Saad - n.w.saad@student.tudelft.nl (5222117)
